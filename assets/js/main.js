@@ -1,262 +1,174 @@
-(function($) {
+/*
+	Eventually by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+*/
 
-	skel.breakpoints({
-		xlarge:	'(max-width: 1680px)',
-		large:	'(max-width: 1280px)',
-		medium:	'(max-width: 980px)',
-		small:	'(max-width: 736px)',
-		xsmall:	'(max-width: 480px)',
-		xxsmall: '(max-width: 360px)'
-	});
+(function() {
 
-	/**
-	 * Applies parallax scrolling to an element's background image.
-	 * @return {jQuery} jQuery object.
-	 */
-	$.fn._parallax = function(intensity) {
+	"use strict";
 
-		var	$window = $(window),
-			$this = $(this);
+	// Methods/polyfills.
 
-		if (this.length == 0 || intensity === 0)
-			return $this;
+		// classList | (c) @remy | github.com/remy/polyfills | rem.mit-license.org
+			!function(){function t(t){this.el=t;for(var n=t.className.replace(/^\s+|\s+$/g,"").split(/\s+/),i=0;i<n.length;i++)e.call(this,n[i])}function n(t,n,i){Object.defineProperty?Object.defineProperty(t,n,{get:i}):t.__defineGetter__(n,i)}if(!("undefined"==typeof window.Element||"classList"in document.documentElement)){var i=Array.prototype,e=i.push,s=i.splice,o=i.join;t.prototype={add:function(t){this.contains(t)||(e.call(this,t),this.el.className=this.toString())},contains:function(t){return-1!=this.el.className.indexOf(t)},item:function(t){return this[t]||null},remove:function(t){if(this.contains(t)){for(var n=0;n<this.length&&this[n]!=t;n++);s.call(this,n,1),this.el.className=this.toString()}},toString:function(){return o.call(this," ")},toggle:function(t){return this.contains(t)?this.remove(t):this.add(t),this.contains(t)}},window.DOMTokenList=t,n(Element.prototype,"classList",function(){return new t(this)})}}();
 
-		if (this.length > 1) {
+		// canUse
+			window.canUse=function(p){if(!window._canUse)window._canUse=document.createElement("div");var e=window._canUse.style,up=p.charAt(0).toUpperCase()+p.slice(1);return p in e||"Moz"+up in e||"Webkit"+up in e||"O"+up in e||"ms"+up in e};
 
-			for (var i=0; i < this.length; i++)
-				$(this[i])._parallax(intensity);
+		// window.addEventListener
+			(function(){if("addEventListener"in window)return;window.addEventListener=function(type,f){window.attachEvent("on"+type,f)}})();
 
-			return $this;
+	// Vars.
+		var	$body = document.querySelector('body');
 
-		}
+	// Disable animations/transitions until everything's loaded.
+		$body.classList.add('is-loading');
 
-		if (!intensity)
-			intensity = 0.25;
+		window.addEventListener('load', function() {
+			window.setTimeout(function() {
+				$body.classList.remove('is-loading');
+			}, 100);
+		});
 
-		$this.each(function() {
+	// Slideshow Background.
+		(function() {
 
-			var $t = $(this),
-				$bg = $('<div class="bg"></div>').appendTo($t),
-				on, off;
+			// Settings.
+				var settings = {
 
-			on = function() {
+					// Images (in the format of 'url': 'alignment').
+						images: {
+							'images/bg01.jpg': 'center',
+							'images/bg02.jpg': 'center',
+							'images/bg03.jpg': 'center'
+						},
 
-				$bg
-					.removeClass('fixed')
-					.css('transform', 'matrix(1,0,0,1,0,0)');
+					// Delay.
+						delay: 6000
 
-				$window
-					.on('scroll._parallax', function() {
+				};
 
-						var pos = parseInt($window.scrollTop()) - parseInt($t.position().top);
+			// Vars.
+				var	pos = 0, lastPos = 0,
+					$wrapper, $bgs = [], $bg,
+					k, v;
 
-						$bg.css('transform', 'matrix(1,0,0,1,0,' + (pos * intensity) + ')');
+			// Create BG wrapper, BGs.
+				$wrapper = document.createElement('div');
+					$wrapper.id = 'bg';
+					$body.appendChild($wrapper);
 
-					});
+				for (k in settings.images) {
 
-			};
+					// Create BG.
+						$bg = document.createElement('div');
+							$bg.style.backgroundImage = 'url("' + k + '")';
+							$bg.style.backgroundPosition = settings.images[k];
+							$wrapper.appendChild($bg);
 
-			off = function() {
-
-				$bg
-					.addClass('fixed')
-					.css('transform', 'none');
-
-				$window
-					.off('scroll._parallax');
-
-			};
-
-			// Disable parallax on ..
-				if (skel.vars.browser == 'ie'		// IE
-				||	skel.vars.browser == 'edge'		// Edge
-				||	window.devicePixelRatio > 1		// Retina/HiDPI (= poor performance)
-				||	skel.vars.mobile)				// Mobile devices
-					off();
-
-			// Enable everywhere else.
-				else {
-
-					skel.on('!large -large', on);
-					skel.on('+large', off);
+					// Add it to array.
+						$bgs.push($bg);
 
 				}
 
-		});
+			// Main loop.
+				$bgs[pos].classList.add('visible');
+				$bgs[pos].classList.add('top');
 
-		$window
-			.off('load._parallax resize._parallax')
-			.on('load._parallax resize._parallax', function() {
-				$window.trigger('scroll');
-			});
+				// Bail if we only have a single BG or the client doesn't support transitions.
+					if ($bgs.length == 1
+					||	!canUse('transition'))
+						return;
 
-		return $(this);
+				window.setInterval(function() {
 
-	};
+					lastPos = pos;
+					pos++;
 
-	$(function() {
+					// Wrap to beginning if necessary.
+						if (pos >= $bgs.length)
+							pos = 0;
 
-		var	$window = $(window),
-			$body = $('body'),
-			$wrapper = $('#wrapper'),
-			$header = $('#header'),
-			$nav = $('#nav'),
-			$main = $('#main'),
-			$navPanelToggle, $navPanel, $navPanelInner;
+					// Swap top images.
+						$bgs[lastPos].classList.remove('top');
+						$bgs[pos].classList.add('visible');
+						$bgs[pos].classList.add('top');
 
-		// Disable animations/transitions until the page has loaded.
-			$window.on('load', function() {
-				window.setTimeout(function() {
-					$body.removeClass('is-loading');
-				}, 100);
-			});
+					// Hide last image after a short delay.
+						window.setTimeout(function() {
+							$bgs[lastPos].classList.remove('visible');
+						}, settings.delay / 2);
 
-		// Prioritize "important" elements on medium.
-			skel.on('+medium -medium', function() {
-				$.prioritize(
-					'.important\\28 medium\\29',
-					skel.breakpoint('medium').active
-				);
-			});
+				}, settings.delay);
 
-		// Scrolly.
-			$('.scrolly').scrolly();
+		})();
 
-		// Background.
-			$wrapper._parallax(0.925);
+	// Signup Form.
+		(function() {
 
-		// Nav Panel.
+			// Vars.
+				var $form = document.querySelectorAll('#signup-form')[0],
+					$submit = document.querySelectorAll('#signup-form input[type="submit"]')[0],
+					$message;
 
-			// Toggle.
-				$navPanelToggle = $(
-					'<a href="#navPanel" id="navPanelToggle">Menu</a>'
-				)
-					.appendTo($wrapper);
+			// Bail if addEventListener isn't supported.
+				if (!('addEventListener' in $form))
+					return;
 
-				// Change toggle styling once we've scrolled past the header.
-					$header.scrollex({
-						bottom: '5vh',
-						enter: function() {
-							$navPanelToggle.removeClass('alt');
-						},
-						leave: function() {
-							$navPanelToggle.addClass('alt');
-						}
-					});
+			// Message.
+				$message = document.createElement('span');
+					$message.classList.add('message');
+					$form.appendChild($message);
 
-			// Panel.
-				$navPanel = $(
-					'<div id="navPanel">' +
-						'<nav>' +
-						'</nav>' +
-						'<a href="#navPanel" class="close"></a>' +
-					'</div>'
-				)
-					.appendTo($body)
-					.panel({
-						delay: 500,
-						hideOnClick: true,
-						hideOnSwipe: true,
-						resetScroll: true,
-						resetForms: true,
-						side: 'right',
-						target: $body,
-						visibleClass: 'is-navPanel-visible'
-					});
+				$message._show = function(type, text) {
 
-				// Get inner.
-					$navPanelInner = $navPanel.children('nav');
+					$message.innerHTML = text;
+					$message.classList.add(type);
+					$message.classList.add('visible');
 
-				// Move nav content on breakpoint change.
-					var $navContent = $nav.children();
+					window.setTimeout(function() {
+						$message._hide();
+					}, 3000);
 
-					skel.on('!medium -medium', function() {
+				};
 
-						// NavPanel -> Nav.
-							$navContent.appendTo($nav);
+				$message._hide = function() {
+					$message.classList.remove('visible');
+				};
 
-						// Flip icon classes.
-							$nav.find('.icons, .icon')
-								.removeClass('alt');
+			// Events.
+			// Note: If you're *not* using AJAX, get rid of this event listener.
+				$form.addEventListener('submit', function(event) {
 
-					});
+					event.stopPropagation();
+					event.preventDefault();
 
-					skel.on('+medium', function() {
+					// Hide message.
+						$message._hide();
 
-						// Nav -> NavPanel.
-						$navContent.appendTo($navPanelInner);
+					// Disable submit.
+						$submit.disabled = true;
 
-						// Flip icon classes.
-							$navPanelInner.find('.icons, .icon')
-								.addClass('alt');
+					// Process form.
+					// Note: Doesn't actually do anything yet (other than report back with a "thank you"),
+					// but there's enough here to piece together a working AJAX submission call that does.
+						window.setTimeout(function() {
 
-					});
+							// Reset form.
+								$form.reset();
 
-				// Hack: Disable transitions on WP.
-					if (skel.vars.os == 'wp'
-					&&	skel.vars.osVersion < 10)
-						$navPanel
-							.css('transition', 'none');
+							// Enable submit.
+								$submit.disabled = false;
 
-		// Intro.
-			var $intro = $('#intro');
+							// Show message.
+								$message._show('success', 'Thank you!');
+								//$message._show('failure', 'Something went wrong. Please try again.');
 
-			if ($intro.length > 0) {
-
-				// Hack: Fix flex min-height on IE.
-					if (skel.vars.browser == 'ie') {
-						$window.on('resize.ie-intro-fix', function() {
-
-							var h = $intro.height();
-
-							if (h > $window.height())
-								$intro.css('height', 'auto');
-							else
-								$intro.css('height', h);
-
-						}).trigger('resize.ie-intro-fix');
-					}
-
-				// Hide intro on scroll (> small).
-					skel.on('!small -small', function() {
-
-						$main.unscrollex();
-
-						$main.scrollex({
-							mode: 'bottom',
-							top: '25vh',
-							bottom: '-50vh',
-							enter: function() {
-								$intro.addClass('hidden');
-							},
-							leave: function() {
-								$intro.removeClass('hidden');
-							}
-						});
-
-					});
-
-				// Hide intro on scroll (<= small).
-					skel.on('+small', function() {
-
-						$main.unscrollex();
-
-						$main.scrollex({
-							mode: 'middle',
-							top: '15vh',
-							bottom: '-15vh',
-							enter: function() {
-								$intro.addClass('hidden');
-							},
-							leave: function() {
-								$intro.removeClass('hidden');
-							}
-						});
+						}, 750);
 
 				});
 
-			}
+		})();
 
-	});
-
-})(jQuery);
+})();
